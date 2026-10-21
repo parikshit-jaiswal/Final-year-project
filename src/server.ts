@@ -1,15 +1,19 @@
+import "dotenv/config";
 import app from "./app";
-// import { connectDatabase } from "./config/database";
+import { connectDatabase } from "./config/database";
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT ?? 5000);
 
 async function bootstrap() {
-  //   await connectDatabase();
+  await connectDatabase();
 
   app.listen(PORT, () => {
     console.log(`Server running on ${PORT}`);
-    console.log(`Click here : http://localhost:${5000}/api`);
+    console.log(`Click here: http://localhost:${PORT}/api`);
   });
 }
 
-bootstrap();
+bootstrap().catch((error: unknown) => {
+  console.error("Unable to start server", error);
+  process.exitCode = 1;
+});
