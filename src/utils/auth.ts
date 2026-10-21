@@ -1,11 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
-import jwt, { type JwtPayload } from "jsonwebtoken";
-import type { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { RefreshToken } from "../models/refreshToken.js";
 
 export type UserType = "provider" | "worker";
 
-export interface AccessTokenClaims extends JwtPayload {
+export interface AccessTokenClaims extends jwt.JwtPayload {
   sub: string;
   userType: UserType;
 }
@@ -67,26 +66,4 @@ export async function issueTokens(userId: string, userType: UserType) {
     accessTokenExpiresIn: accessTokenTtl(),
     refreshTokenExpiresAt: refresh.expiresAt.toISOString(),
   };
-}
-
-export function authenticateAccessToken(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
-    return res.status(401).json({ success: false, message: "Access token is required" });
-  }
-
-  try {
-    const claims = jwt.verify(header.slice(7), jwtSecret());
-    if (
-      typeof claims === "string" ||
-      typeof claims.sub !== "string" ||
-      (claims.userType !== "provider" && claims.userType !== "worker")
-    ) {
-      throw new Error("Invalid access token claims");
-    }
-    req.auth = claims as AccessTokenClaims;
-    return next();
-  } catch {
-    return res.status(401).json({ success: false, message: "Invalid or expired access token" });
-  }
 }
