@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { ZodError } from "zod";
-import routes from "./routes";
+import routes from "./routes/index.js";
 // import { errorMiddleware } from "./middlewares/error.middleware";
 
 const app = express();
