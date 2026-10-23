@@ -44,6 +44,7 @@ The actual response wraps this object in a `tokens` property.
 | POST | `/providers/auth/verify-otp` | No | Verify provider OTP and issue tokens |
 | POST | `/providers` | No | Register a healthcare provider |
 | GET | `/providers/:id` | Access token | Read the authenticated provider profile |
+| PATCH | `/providers/:id` | Access token | Complete or update the authenticated provider profile |
 | POST | `/workers/auth/request-otp` | No | Generate worker OTP |
 | POST | `/workers/auth/verify-otp` | No | Verify worker OTP and issue tokens |
 | POST | `/workers` | No | Register a worker and generate a Worker Health ID |
@@ -210,6 +211,56 @@ Response: `200 OK`
 ```
 
 The token subject must match `:id`, and its `userType` must be `provider`.
+
+### `PATCH /providers/:id`
+
+Completes or updates the provider's remaining profile data after phone OTP
+verification. The access token returned by
+`POST /providers/auth/verify-otp` is required. The token subject must match
+`:id`; the phone number and verification status cannot be changed through this
+endpoint.
+
+Send the request as `multipart/form-data`. Text fields can include:
+
+```json
+{
+  "category": "district_hospital",
+  "fullName": "Dr. Ramesh Kumar",
+  "designation": "Medical Officer",
+  "facilityId": "MH-PUN-CIV-4401",
+  "facilityProofUrl": "https://example.com/proof.pdf",
+  "state": "Maharashtra",
+  "district": "Pune",
+  "consent": true,
+  "condition": "Mobile camp operating normally",
+  "conditionDateTime": "2026-10-23T10:30:00.000Z",
+  "conditionStartDateTime": "2026-10-23T09:00:00.000Z",
+  "conditionEndDateTime": "2026-10-23T17:00:00.000Z"
+}
+```
+
+Attach the condition evidence image using the multipart field
+`conditionPhoto`. Images are limited to 10 MB and are uploaded to Cloudinary.
+The API stores the resulting secure URL and Cloudinary public ID in the
+provider record.
+
+Response: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Provider profile updated successfully",
+  "provider": {
+    "_id": "671234567890abcdef123456",
+    "fullName": "Dr. Ramesh Kumar",
+    "phone": "+919876543210",
+    "status": "pending_verification",
+    "condition": "Mobile camp operating normally",
+    "conditionDateTime": "2026-10-23T10:30:00.000Z",
+    "conditionPhotoUrl": "https://res.cloudinary.com/example/image/upload/condition.jpg"
+  }
+}
+```
 
 ## 3. Worker APIs
 

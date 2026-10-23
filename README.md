@@ -39,6 +39,9 @@ JWT_ACCESS_SECRET=<random secret with at least 32 characters>
 ACCESS_TOKEN_TTL_SECONDS=900
 REFRESH_TOKEN_TTL_DAYS=30
 RETURN_OTP_IN_RESPONSE=false
+CLOUDINARY_CLOUD_NAME=<your Cloudinary cloud name>
+CLOUDINARY_API_KEY=<your Cloudinary API key>
+CLOUDINARY_API_SECRET=<your Cloudinary API secret>
 ```
 
 Render automatically provides `PORT`; the server listens on that value.

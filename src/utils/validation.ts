@@ -21,17 +21,44 @@ export const otpVerifySchema = z.object({
   code: z.string().trim().regex(/^\d{6}$/, "OTP must contain 6 digits"),
 });
 
-export const providerRegistrationSchema = z.object({
+const providerDetailsSchema = z.object({
   category: providerCategorySchema,
   fullName: z.string().trim().min(2).max(120),
   designation: z.string().trim().min(2).max(120),
   facilityId: z.string().trim().min(2).max(120),
   facilityProofUrl: z.string().trim().url().optional(),
-  phone: phoneSchema,
   state: z.string().trim().min(2).max(80),
   district: z.string().trim().min(2).max(80),
   consent: z.literal(true, { error: "Consent is required" }),
 });
+
+const providerConditionSchema = z.object({
+  condition: z.string().trim().min(2).max(2000),
+  conditionDateTime: z.coerce.date(),
+  conditionStartDateTime: z.coerce.date().optional(),
+  conditionEndDateTime: z.coerce.date().optional(),
+}).refine(
+  (data) =>
+    !data.conditionStartDateTime ||
+    !data.conditionEndDateTime ||
+    data.conditionEndDateTime >= data.conditionStartDateTime,
+  {
+    message: "Condition end date/time must be after the start date/time",
+    path: ["conditionEndDateTime"],
+  },
+);
+
+export const providerRegistrationSchema = providerDetailsSchema.extend({
+  phone: phoneSchema,
+});
+
+export const providerUpdateSchema = providerDetailsSchema
+  .partial()
+  .merge(providerConditionSchema.partial())
+  .refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "At least one provider field is required" },
+);
 
 export const workerRegistrationSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
