@@ -32,33 +32,33 @@ const providerDetailsSchema = z.object({
   consent: z.literal(true, { error: "Consent is required" }),
 });
 
-const providerConditionSchema = z.object({
+const providerConditionFields = z.object({
   condition: z.string().trim().min(2).max(2000),
   conditionDateTime: z.coerce.date(),
   conditionStartDateTime: z.coerce.date().optional(),
   conditionEndDateTime: z.coerce.date().optional(),
-}).refine(
-  (data) =>
-    !data.conditionStartDateTime ||
-    !data.conditionEndDateTime ||
-    data.conditionEndDateTime >= data.conditionStartDateTime,
-  {
-    message: "Condition end date/time must be after the start date/time",
-    path: ["conditionEndDateTime"],
-  },
-);
+});
 
 export const providerRegistrationSchema = providerDetailsSchema.extend({
   phone: phoneSchema,
 });
 
-export const providerUpdateSchema = providerDetailsSchema
-  .partial()
-  .merge(providerConditionSchema.partial())
+export const providerUpdateSchema = providerDetailsSchema.partial()
+  .extend(providerConditionFields.partial().shape)
   .refine(
-  (data) => Object.keys(data).length > 0,
-  { message: "At least one provider field is required" },
-);
+    (data) =>
+      !data.conditionStartDateTime ||
+      !data.conditionEndDateTime ||
+      data.conditionEndDateTime >= data.conditionStartDateTime,
+    {
+      message: "Condition end date/time must be after the start date/time",
+      path: ["conditionEndDateTime"],
+    },
+  )
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one provider field is required" },
+  );
 
 export const workerRegistrationSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
