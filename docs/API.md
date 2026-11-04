@@ -231,7 +231,6 @@ Send the request as `multipart/form-data`. Text fields can include:
   "facilityProofUrl": "https://example.com/proof.pdf",
   "state": "Maharashtra",
   "district": "Pune",
-  "consent": true,
   "condition": "Mobile camp operating normally",
   "conditionDateTime": "2026-10-23T10:30:00.000Z",
   "conditionStartDateTime": "2026-10-23T09:00:00.000Z",
@@ -239,10 +238,29 @@ Send the request as `multipart/form-data`. Text fields can include:
 }
 ```
 
+All fields are optional for an update, but at least one text field must be
+supplied. The provider details fields are validated as follows:
+
+- `category` must be one of `district_hospital`, `phc`, `mobile_camp`, or
+  `ngo_camp`.
+- `fullName`, `designation`, `facilityId`, `state`, and `district` must contain
+  between 2 and 120 characters, except `state` and `district`, which allow up
+  to 80 characters.
+- `facilityProofUrl`, when supplied, must be a valid URL.
+- `condition` must contain between 2 and 2,000 characters.
+- Date/time fields must be valid dates. When both condition boundaries are
+  supplied, `conditionEndDateTime` must be at or after
+  `conditionStartDateTime`.
+
 Attach the condition evidence image using the multipart field
-`conditionPhoto`. Images are limited to 10 MB and are uploaded to Cloudinary.
-The API stores the resulting secure URL and Cloudinary public ID in the
-provider record.
+`conditionPhoto`. The field accepts images only and files are limited to 10 MB.
+Images are uploaded to Cloudinary. The API stores the resulting secure URL and
+Cloudinary public ID in the provider record.
+
+The endpoint does not accept `phone` or `status` updates. The `consent` field
+is part of the provider registration schema and is not required when updating
+an existing profile. If a condition photo is supplied, it can be sent together
+with any valid text update field.
 
 Response: `200 OK`
 
