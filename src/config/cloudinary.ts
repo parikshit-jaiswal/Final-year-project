@@ -35,6 +35,29 @@ export function uploadConditionPhoto(buffer: Buffer, originalName: string) {
           reject(error ?? new Error("Cloudinary upload returned no result"));
           return;
         }
+
+        resolve({ secureUrl: result.secure_url, publicId: result.public_id });
+      },
+    );
+    upload.end(buffer);
+  });
+}
+
+export function uploadMedicalImage(buffer: Buffer, originalName: string) {
+  configureCloudinary();
+  return new Promise<{ secureUrl: string; publicId: string }>((resolve, reject) => {
+    const upload = cloudinary.uploader.upload_stream(
+      {
+        folder: "caretrail/medical-records",
+        resource_type: "image",
+        public_id: originalName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "-"),
+        unique_filename: true,
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error ?? new Error("Cloudinary upload returned no result"));
+          return;
+        }
         resolve({ secureUrl: result.secure_url, publicId: result.public_id });
       },
     );

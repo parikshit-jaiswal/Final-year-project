@@ -42,6 +42,9 @@ RETURN_OTP_IN_RESPONSE=false
 CLOUDINARY_CLOUD_NAME=<your Cloudinary cloud name>
 CLOUDINARY_API_KEY=<your Cloudinary API key>
 CLOUDINARY_API_SECRET=<your Cloudinary API secret>
+ADMIN_EMAIL=<initial administrator email>
+ADMIN_PASSWORD=<initial administrator password, minimum 8 characters>
+ADMIN_NAME=CareTrail Administrator
 ```
 
 Render automatically provides `PORT`; the server listens on that value.

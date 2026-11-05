@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { Worker } from "../models/worker.js";
 import { issueTokens } from "../utils/auth.js";
 import { normalizePhone } from "../utils/otp.js";
-import { workerLoginSchema, workerRegistrationSchema } from "../utils/validation.js";
+import { workerLoginSchema, workerRegistrationSchema, workerUpdateSchema } from "../utils/validation.js";
 
 async function createWorkerId(): Promise<string> {
   for (;;) {
@@ -48,6 +48,7 @@ export async function getWorker(req: Request, res: Response) {
   if (req.auth?.userType !== "worker") {
     return res.status(403).json({ success: false, message: "You cannot access this worker profile" });
   }
+
   const workerId = Array.isArray(req.params.workerId)
     ? req.params.workerId[0]
     : req.params.workerId;
@@ -57,8 +58,23 @@ export async function getWorker(req: Request, res: Response) {
   if (!worker) {
     return res.status(404).json({ success: false, message: "Worker not found" });
   }
+
   if (req.auth.sub !== worker.id) {
     return res.status(403).json({ success: false, message: "You cannot access this worker profile" });
   }
   return res.json({ success: true, worker });
+}
+
+export async function updateWorker(req: Request, res: Response) {
+  if (req.auth?.userType !== "worker") {
+    return res.status(403).json({ success: false, message: "You cannot update this worker profile" });
+  }
+  const workerId = Array.isArray(req.params.workerId) ? req.params.workerId[0] : req.params.workerId;
+  const worker = await Worker.findOne({ workerId: workerId.toUpperCase() });
+  if (!worker) return res.status(404).json({ success: false, message: "Worker not found" });
+  if (req.auth.sub !== worker.id) return res.status(403).json({ success: false, message: "You cannot update this worker profile" });
+  const data = workerUpdateSchema.parse(req.body);
+  Object.assign(worker, data);
+  await worker.save();
+  return res.json({ success: true, message: "Worker profile updated successfully", worker });
 }

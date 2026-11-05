@@ -17,10 +17,10 @@ async function requestOtp(req: Request, res: Response, role: UserType) {
   const normalizedPhone = normalizePhone(phone);
   const code = createOtp();
 
-  await Otp.deleteMany({ phone: normalizedPhone, role });
+  await Otp.deleteMany({ phone: normalizedPhone, role: role as "provider" | "worker" });
   await Otp.create({
     phone: normalizedPhone,
-    role,
+    role: role as "provider" | "worker",
     codeHash: hashOtp(code),
     expiresAt: new Date(Date.now() + 5 * 60 * 1000),
   });
@@ -38,14 +38,14 @@ async function verifyOtp(req: Request, res: Response, role: UserType) {
   const normalizedPhone = normalizePhone(phone);
   const otp = await Otp.findOne({
     phone: normalizedPhone,
-    role,
+    role: role as "provider" | "worker",
     consumedAt: { $exists: false },
     expiresAt: { $gt: new Date() },
   }).sort({ createdAt: -1 });
 
-  if (!otp || otp.attempts >= 5 || otp.codeHash !== hashOtp(code)) {
+  if (!otp || (otp.attempts ?? 0) >= 5 || otp.codeHash !== hashOtp(code)) {
     if (otp) {
-      otp.attempts += 1;
+      otp.attempts = (otp.attempts ?? 0) + 1;
       await otp.save();
     }
     return res.status(401).json({ success: false, message: "Invalid or expired OTP" });
@@ -58,6 +58,9 @@ async function verifyOtp(req: Request, res: Response, role: UserType) {
     const provider = await Provider.findOne({ phone: normalizedPhone }).select("-__v");
     if (!provider) {
       return res.status(404).json({ success: false, message: "Provider is not registered" });
+    }
+    if (provider.status !== "active") {
+      return res.status(403).json({ success: false, message: "Provider registration is awaiting administrator approval" });
     }
     return res.json({
       success: true,

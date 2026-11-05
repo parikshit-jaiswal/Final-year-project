@@ -3,7 +3,7 @@ import { Schema, model } from "mongoose";
 const refreshTokenSchema = new Schema(
   {
     tokenHash: { type: String, required: true, unique: true, index: true },
-    userType: { type: String, enum: ["provider", "worker"], required: true },
+    userType: { type: String, enum: ["provider", "worker", "admin"], required: true },
     userId: { type: Schema.Types.ObjectId, required: true, index: true },
     expiresAt: { type: Date, required: true },
     revokedAt: { type: Date },

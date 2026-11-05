@@ -75,3 +75,36 @@ export const workerRegistrationSchema = z.object({
 export const workerLoginSchema = z.object({
   workerId: z.string().trim().min(4).max(40),
 });
+
+export const workerUpdateSchema = z.object({
+  fullName: z.string().trim().min(2).max(120).optional(),
+  yearOfBirth: z.coerce.number().int().min(1900).max(new Date().getFullYear()).optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  industry: z.string().trim().min(2).max(120).optional(),
+  homeState: z.string().trim().min(2).max(80).optional(),
+  homeDistrict: z.string().trim().min(2).max(80).optional(),
+  workDestination: z.string().trim().min(2).max(160).optional(),
+}).refine((data) => Object.keys(data).length > 0, "At least one worker field is required");
+
+export const medicalRecordSchema = z.object({
+  workerId: z.string().trim().min(4).max(40),
+  condition: z.string().trim().min(2).max(2000),
+  visitAt: z.coerce.date(),
+  prescriptionNotes: z.string().trim().max(5000).optional(),
+  clinicalRemarks: z.string().trim().max(5000).optional(),
+  observations: z.array(z.string().trim().min(1).max(120)).max(20).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+  accuracyMeters: z.coerce.number().min(0).optional(),
+  capturedAt: z.coerce.date().optional(),
+  address: z.string().trim().max(300).optional(),
+});
+
+export const adminLoginSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(200),
+});
+
+export const providerStatusSchema = z.object({
+  status: z.enum(["active", "rejected"]),
+});

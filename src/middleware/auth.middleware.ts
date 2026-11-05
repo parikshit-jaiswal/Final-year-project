@@ -21,7 +21,7 @@ export function authenticateAccessToken(req: Request, res: Response, next: NextF
     if (
       typeof claims === "string" ||
       typeof claims.sub !== "string" ||
-      (claims.userType !== "provider" && claims.userType !== "worker")
+      !["provider", "worker", "admin"].includes(claims.userType as string)
     ) {
       throw new Error("Invalid access token claims");
     }

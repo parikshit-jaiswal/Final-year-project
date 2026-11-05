@@ -52,6 +52,19 @@ The actual response wraps this object in a `tokens` property.
 | GET | `/workers/:workerId` | Access token | Read the authenticated worker profile |
 | POST | `/auth/refresh` | No | Rotate a refresh token |
 | POST | `/auth/logout` | No | Revoke a refresh token |
+| PATCH | `/workers/:workerId` | Worker token | Update the authenticated worker profile |
+| POST | `/medical-records` | Provider token | Create a visit and upload a prescription image |
+| GET | `/medical-records/worker/:workerId` | Worker/provider token | List a worker's medical records |
+| GET | `/medical-records/:id` | Worker/provider token | Read one medical record |
+| POST | `/admin/auth/login` | No | Authenticate an administrator |
+| GET | `/admin/dashboard` | Admin token | Dashboard metrics |
+| GET | `/admin/workers` | Admin token | Search the worker directory |
+| GET | `/admin/providers` | Admin token | List provider registrations |
+| PATCH | `/admin/providers/:id/status` | Admin token | Approve or reject a provider |
+| GET | `/admin/checkins` | Admin token | List geotagged health visits |
+| GET | `/admin/reports` | Admin token | List reports and uploaded records |
+| GET | `/admin/hotspots` | Admin token | Aggregate visit coordinates |
+| GET | `/admin/settings` | Admin token | Read operational settings |
 
 ## 1. API test endpoint
 
@@ -212,6 +225,9 @@ Response: `200 OK`
 
 The token subject must match `:id`, and its `userType` must be `provider`.
 
+Providers remain unable to authenticate until an administrator changes their
+status to `active` with `PATCH /admin/providers/:id/status`.
+
 ### `PATCH /providers/:id`
 
 Completes or updates the provider's remaining profile data after phone OTP
@@ -237,6 +253,51 @@ Send the request as `multipart/form-data`. Text fields can include:
   "conditionEndDateTime": "2026-10-23T17:00:00.000Z"
 }
 ```
+
+## 5. Worker medical records
+
+### `POST /medical-records`
+
+Only an approved provider can create a record. Send `multipart/form-data` with
+the following fields:
+
+```text
+workerId=CTH12345678
+condition=Acute bronchitis
+visitAt=2026-10-24T10:45:00.000Z
+prescriptionNotes=Amoxicillin 500mg
+clinicalRemarks=Fit for light duty
+observations=["Dust allergy caution","Follow-up in 3 days"]
+latitude=19.076
+longitude=72.8777
+accuracyMeters=4
+address=Wardha Construction Site Sector 4
+prescriptionImage=<image file, max 10 MB>
+```
+
+The prescription image is stored in Cloudinary and its secure URL is returned
+in the record. Verification coordinates are stored with the visit when
+provided.
+
+### `GET /medical-records/worker/:workerId`
+
+Workers can read only their own records. Providers and administrators can use
+this endpoint for authorized application flows. Records are sorted newest
+first and include the recording provider's identity and facility.
+
+## 6. Administrator APIs
+
+Set `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least eight characters), and optional
+`ADMIN_NAME` before starting the server. The first startup creates that
+administrator if it does not already exist. Authenticate with
+`POST /admin/auth/login` to receive an access token whose `userType` is
+`admin`.
+
+`GET /admin/workers` accepts optional `search` and `status` query parameters.
+`PATCH /admin/providers/:id/status` accepts `{ "status": "active" }` or
+`{ "status": "rejected" }`. All other admin endpoints require the admin access
+token and return data used by the dashboard, hotspot map, check-in log, and
+reports screens.
 
 All fields are optional for an update, but at least one text field must be
 supplied. The provider details fields are validated as follows:

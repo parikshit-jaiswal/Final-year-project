@@ -1,6 +1,15 @@
 import { Schema, model } from "mongoose";
 
-const otpSchema = new Schema(
+export interface OtpDocument {
+  phone: string;
+  role: "provider" | "worker";
+  codeHash: string;
+  expiresAt: Date;
+  attempts?: number;
+  consumedAt?: Date;
+}
+
+const otpSchema = new Schema<OtpDocument>(
   {
     phone: { type: String, required: true, index: true },
     role: { type: String, enum: ["provider", "worker"], required: true },

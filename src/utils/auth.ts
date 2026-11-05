@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { RefreshToken } from "../models/refreshToken.js";
 
-export type UserType = "provider" | "worker";
+export type UserType = "provider" | "worker" | "admin";
 
 export interface AccessTokenClaims extends jwt.JwtPayload {
   sub: string;
