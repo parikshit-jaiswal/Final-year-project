@@ -53,7 +53,7 @@ The actual response wraps this object in a `tokens` property.
 | POST | `/auth/refresh` | No | Rotate a refresh token |
 | POST | `/auth/logout` | No | Revoke a refresh token |
 | PATCH | `/workers/:workerId` | Worker token | Update the authenticated worker profile |
-| POST | `/medical-records` | Provider token | Create a visit and upload a prescription image |
+| POST | `/medical-records` | Provider token | Create a visit; optionally upload a prescription image |
 | GET | `/medical-records/worker/:workerId` | Worker/provider token | List a worker's medical records |
 | GET | `/medical-records/:id` | Worker/provider token | Read one medical record |
 | POST | `/admin/auth/login` | No | Authenticate an administrator |
@@ -258,8 +258,9 @@ Send the request as `multipart/form-data`. Text fields can include:
 
 ### `POST /medical-records`
 
-Only an approved provider can create a record. Send `multipart/form-data` with
-the following fields:
+Only an approved provider can create a record. Send `multipart/form-data`.
+The `prescriptionImage` file is optional and must be an image no larger than
+10 MB. The following text fields are supported:
 
 ```text
 workerId=CTH12345678
@@ -268,22 +269,80 @@ visitAt=2026-10-24T10:45:00.000Z
 prescriptionNotes=Amoxicillin 500mg
 clinicalRemarks=Fit for light duty
 observations=["Dust allergy caution","Follow-up in 3 days"]
+verificationPhotoUrl=https://example.com/verification.jpg
 latitude=19.076
 longitude=72.8777
 accuracyMeters=4
+capturedAt=2026-10-24T10:45:00.000Z
 address=Wardha Construction Site Sector 4
 prescriptionImage=<image file, max 10 MB>
 ```
 
-The prescription image is stored in Cloudinary and its secure URL is returned
-in the record. Verification coordinates are stored with the visit when
-provided.
+`workerId`, `condition`, and `visitAt` are required. The other text fields are
+optional. `observations` accepts up to 20 strings, each up to 120 characters.
+Latitude and longitude are validated as geographic coordinates, and
+`accuracyMeters` must be non-negative.
+
+The prescription image, when supplied, is stored in Cloudinary and its secure
+URL is returned in the record. Verification metadata is stored when provided.
 
 ### `GET /medical-records/worker/:workerId`
 
 Workers can read only their own records. Providers and administrators can use
 this endpoint for authorized application flows. Records are sorted newest
 first and include the recording provider's identity and facility.
+
+Response: `200 OK`
+
+```json
+{
+  "success": true,
+  "worker": {
+    "workerId": "CTH61582737",
+    "fullName": "Rajesh Kumar Verma"
+  },
+  "records": [
+    {
+      "_id": "671234567890abcdef123456",
+      "condition": "Acute bronchitis",
+      "visitAt": "2026-10-24T10:45:00.000Z",
+      "provider": {
+        "fullName": "Dr. Ramesh Kumar",
+        "designation": "Medical Officer",
+        "facilityId": "MH-PUN-CIV-4401",
+        "district": "Pune"
+      }
+    }
+  ]
+}
+```
+
+### `GET /medical-records/:id`
+
+Returns one medical record. Workers can read only their own record. Providers
+and administrators can use this endpoint for authorized application flows.
+
+Response: `200 OK`
+
+```json
+{
+  "success": true,
+  "record": {
+    "_id": "671234567890abcdef123456",
+    "condition": "Acute bronchitis",
+    "visitAt": "2026-10-24T10:45:00.000Z",
+    "worker": {
+      "workerId": "CTH61582737",
+      "fullName": "Rajesh Kumar Verma"
+    },
+    "provider": {
+      "fullName": "Dr. Ramesh Kumar",
+      "designation": "Medical Officer",
+      "facilityId": "MH-PUN-CIV-4401"
+    }
+  }
+}
+```
 
 ## 6. Administrator APIs
 
@@ -298,6 +357,79 @@ administrator if it does not already exist. Authenticate with
 `{ "status": "rejected" }`. All other admin endpoints require the admin access
 token and return data used by the dashboard, hotspot map, check-in log, and
 reports screens.
+
+### `POST /admin/auth/login`
+
+Request:
+
+```json
+{
+  "email": "admin@caretrail.local",
+  "password": "<administrator-password>"
+}
+```
+
+The password must contain at least eight characters. A successful response
+contains `admin` details and admin access and refresh tokens.
+
+### `GET /admin/dashboard`
+
+Returns `metrics` containing `activeWorkers`, `activeProviders`, `records`,
+`pendingProviders`, and `flaggedRecords`.
+
+### `GET /admin/workers`
+
+Optional query parameters:
+
+- `search`: searches worker name, Worker Health ID, home district, and work
+  destination.
+- `status`: filters by worker status.
+
+Results are limited to the newest 100 workers.
+
+### `GET /admin/providers`
+
+Returns the newest 100 provider registrations.
+
+### `PATCH /admin/providers/:id/status`
+
+Request:
+
+```json
+{
+  "status": "active"
+}
+```
+
+`status` must be either `active` or `rejected`.
+
+### `GET /admin/checkins`
+
+Returns the newest 100 medical visits with worker and provider details.
+
+### `GET /admin/reports`
+
+Returns the newest 100 medical records with worker and provider details.
+
+### `GET /admin/hotspots`
+
+Returns up to 100 coordinate groups containing `latitude`, `longitude`, and
+visit count, sorted by the number of visits.
+
+### `GET /admin/settings`
+
+Returns the current operational settings:
+
+```json
+{
+  "success": true,
+  "settings": {
+    "otpExpirySeconds": 300,
+    "retentionDays": 2555,
+    "geofenceRadiusMeters": 150
+  }
+}
+```
 
 All fields are optional for an update, but at least one text field must be
 supplied. The provider details fields are validated as follows:
@@ -469,6 +601,42 @@ Response: `200 OK`
 ```json
 {
   "success": true,
+  "worker": {
+    "_id": "671234567890abcdef123456",
+    "workerId": "CTH61582737",
+    "fullName": "Rajesh Kumar Verma",
+    "phone": "+919876543210"
+  }
+}
+```
+
+### `PATCH /workers/:workerId`
+
+Updates the authenticated worker's profile. The access token must belong to
+the requested worker and must have `userType` equal to `worker`. The request
+uses JSON and must include at least one of the following fields:
+
+```json
+{
+  "fullName": "Rajesh Kumar Verma",
+  "yearOfBirth": 1992,
+  "gender": "male",
+  "industry": "Construction",
+  "homeState": "Bihar",
+  "homeDistrict": "Samastipur",
+  "workDestination": "Mumbai MMR"
+}
+```
+
+`phone`, `workerId`, `status`, and `consent` cannot be changed through this
+endpoint.
+
+Response: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Worker profile updated successfully",
   "worker": {
     "_id": "671234567890abcdef123456",
     "workerId": "CTH61582737",
