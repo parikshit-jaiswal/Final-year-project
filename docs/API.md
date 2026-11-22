@@ -65,6 +65,11 @@ The actual response wraps this object in a `tokens` property.
 | GET | `/admin/reports` | Admin token | List reports and uploaded records |
 | GET | `/admin/hotspots` | Admin token | Aggregate visit coordinates |
 | GET | `/admin/settings` | Admin token | Read operational settings |
+| PATCH | `/admin/settings` | Admin token | Update operational settings |
+| GET | `/admin/administrators` | Admin token | List administrators |
+| POST | `/admin/administrators` | Admin token | Create an administrator |
+| PATCH | `/admin/administrators/:id` | Admin token | Update an administrator |
+| DELETE | `/admin/administrators/:id` | Admin token | Disable an administrator |
 
 ## 1. API test endpoint
 
@@ -430,6 +435,23 @@ Returns the current operational settings:
   }
 }
 ```
+
+### `PATCH /admin/settings`
+
+Updates one or more operational settings. Accepted fields are
+`otpExpirySeconds` (60-3600), `retentionDays` (1-36500), and
+`geofenceRadiusMeters` (10-10000).
+
+### Administrator management
+
+- `GET /admin/administrators`
+- `POST /admin/administrators`
+- `PATCH /admin/administrators/:id`
+- `DELETE /admin/administrators/:id`
+
+Create requests require `email`, `fullName`, and `password`, plus optional
+`role` (`admin` or `super_admin`) and `status` (`active` or `disabled`).
+Deleting an administrator disables its account rather than removing audit data.
 
 All fields are optional for an update, but at least one text field must be
 supplied. The provider details fields are validated as follows:

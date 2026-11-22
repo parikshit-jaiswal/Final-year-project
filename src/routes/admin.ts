@@ -1,6 +1,21 @@
 import { Router } from "express";
 import { authenticateAccessToken } from "../middleware/auth.middleware.js";
-import { dashboard, hotspots, listCheckins, listProviders, listReports, listWorkers, loginAdmin, updateProviderStatus } from "../controllers/admin.controller.js";
+import {
+  createAdministrator,
+  dashboard,
+  deleteAdministrator,
+  getSettings,
+  hotspots,
+  listAdministrators,
+  listCheckins,
+  listProviders,
+  listReports,
+  listWorkers,
+  loginAdmin,
+  updateAdministrator,
+  updateProviderStatus,
+  updateSettings,
+} from "../controllers/admin.controller.js";
 
 const router = Router();
 router.post("/auth/login", loginAdmin);
@@ -13,6 +28,11 @@ router.patch("/providers/:id/status", updateProviderStatus);
 router.get("/checkins", listCheckins);
 router.get("/reports", listReports);
 router.get("/hotspots", hotspots);
-router.get("/settings", (_req, res) => res.json({ success: true, settings: { otpExpirySeconds: 300, retentionDays: 2555, geofenceRadiusMeters: 150 } }));
+router.get("/settings", getSettings);
+router.patch("/settings", updateSettings);
+router.get("/administrators", listAdministrators);
+router.post("/administrators", createAdministrator);
+router.patch("/administrators/:id", updateAdministrator);
+router.delete("/administrators/:id", deleteAdministrator);
 
 export default router;

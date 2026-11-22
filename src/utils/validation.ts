@@ -108,3 +108,17 @@ export const adminLoginSchema = z.object({
 export const providerStatusSchema = z.object({
   status: z.enum(["active", "rejected"]),
 });
+
+export const settingsUpdateSchema = z.object({
+  otpExpirySeconds: z.coerce.number().int().min(60).max(3600).optional(),
+  retentionDays: z.coerce.number().int().min(1).max(36500).optional(),
+  geofenceRadiusMeters: z.coerce.number().int().min(10).max(10000).optional(),
+}).refine((data) => Object.keys(data).length > 0, "At least one setting is required");
+
+export const administratorSchema = z.object({
+  email: z.string().trim().email(),
+  fullName: z.string().trim().min(2).max(120),
+  password: z.string().min(8).max(200).optional(),
+  role: z.enum(["admin", "super_admin"]).optional(),
+  status: z.enum(["active", "disabled"]).optional(),
+});
