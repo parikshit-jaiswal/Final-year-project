@@ -12,7 +12,15 @@ export async function connectDatabase(): Promise<void> {
   if (email && password && password.length >= 8) {
     await Admin.updateOne(
       { email: email.toLowerCase() },
-      { $setOnInsert: { email: email.toLowerCase(), fullName: process.env.ADMIN_NAME ?? "Administrator", passwordHash: hashPassword(password), role: "super_admin" } },
+      {
+        $set: {
+          email: email.toLowerCase(),
+          fullName: process.env.ADMIN_NAME ?? "Administrator",
+          passwordHash: hashPassword(password),
+          role: "super_admin",
+          status: "active",
+        },
+      },
       { upsert: true },
     );
   }

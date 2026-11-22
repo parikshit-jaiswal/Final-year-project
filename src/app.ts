@@ -28,6 +28,18 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   if (
     typeof error === "object" &&
     error !== null &&
+    "type" in error &&
+    error.type === "entity.parse.failed"
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Request body must be valid JSON",
+    });
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
     "code" in error &&
     error.code === 11000
   ) {
